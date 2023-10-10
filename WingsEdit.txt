@@ -1,0 +1,95 @@
+1, Make a directory for wings source code and go to it: mkdir /srv/wings && cd /srv/wings
+
+2, Download the latest release with wget or manually from github: https://github.com/pterodactyl/wings
+   a, Select the latest release and download, for example: wget https://github.com/pterodactyl/wings/archive/refs/heads/release/v1.6.1.zip
+   b, Select the latest release and download with the Code -> Download ZIP Button and upload manually to your server
+
+3, Unzip it: unzip wings-release-v1.6.1.zip
+
+4, Paste WingsFiles to your wings folder
+
+5,
+Open /router/router.go
+Paste this line to under the server.POST("/ws/deny", postServerDenyWSTokens) line
+
+server.POST("/firewall/add", addFirewallRule)
+server.POST("/firewall/remove", removeFirewallRule)
+	  
+
+	  
+Open /remote/http.go
+Please paste this lines to /remote/http.go above the type Client interface { line
+
+type Rule struct {
+	Ip       string `json:"ip"`
+	Port     int    `json:"port"`
+	Priority int    `json:"priority"`
+	Type     string `json:"type"`
+}
+
+
+Paste this line to /remote/http.go under the ValidateSftpCredentials(ctx context.Context, request SftpAuthRequest) (SftpAuthResponse, error) line
+
+GetFirewallRules(ctx context.Context, uuid string) ([]Rule, error)
+
+
+
+Open /environment/environment.go
+Please paste this lines to /environment/environment.go under the SetLogCallback(func([]byte)) line
+
+// Inspect the container
+GetLocalIP(ctx context.Context) (string, error)
+
+
+
+Open /remote/servers.go
+Please paste this lines to /remote/servers.go bottom of the file
+
+// Get Firewall Rules
+func (c *client) GetFirewallRules(ctx context.Context, uuid string) ([]Rule, error) {
+	var r struct {
+		Success bool   `json:"success"`
+		Error   string `json:"error"`
+		Rules   []Rule `json:"rules"`
+	}
+
+	resp, err := c.Post(ctx, fmt.Sprintf("/servers/%s/rules", uuid), nil)
+	if err != nil {
+		return r.Rules, err
+	}
+
+	defer resp.Body.Close()
+
+	if err := resp.BindJSON(&r); err != nil {
+		return r.Rules, err
+	}
+
+	if r.Success != true {
+		return r.Rules, fmt.Errorf("failedToGetRules")
+	}
+
+	return r.Rules, nil
+}
+
+
+
+Open /server/listeners.go
+Please add this line to //server/listeners.go under the s.Environment.SetState(environment.ProcessRunningState) line
+
+s.AddRules()
+
+
+
+Open /environment/docker/power.go
+Please paste this line to /environment/docker/power.go above the return nil line (3 places - ONLY to the Stop, WaitForStop, Terminate function's last return nil) (help02-1.png, help02-2.png, help02-3.png)
+
+e.RemoveRules()
+
+
+
+6, Install go: https://golang.org/doc/install
+
+7, Build the new wings (if you created to other folder, change it - or if your wings is other folder, change it): 
+   - cd /srv/wings/ && go build -o /usr/local/bin/wings && chmod +x /usr/local/bin/wings
+
+8, Restart wings: service wings restart

@@ -1,0 +1,58 @@
+/routes/api-client.php
+Please paste this lines to /routes/api-client.php above the Route::group(['prefix' => '/settings'], function () { line
+
+Route::group(['prefix' => '/firewall'], function () {
+	Route::get('/', [Client\Servers\FirewallController::class, 'index']);
+	Route::post('/add', [Client\Servers\FirewallController::class, 'add']);
+	Route::delete('/remove/{id}', [Client\Servers\FirewallController::class, 'remove']);
+});
+
+
+
+
+/routes/api-remote.php
+Please paste this line to /routes/api-remote.php under the Route::get('/transfer/success', [Remote\Servers\ServerTransferController::class, 'success']); line
+
+Route::post('/rules', [Remote\Servers\FirewallController::class, 'getRules']);
+
+
+
+
+/app/Models/Permission.php
+Please insert this line to /app/Models/Permission.php above the 'websocket' => [ line
+
+'firewall' => [
+	'description' => 'Manage server firewall.',
+	'keys' => [
+		'manage' => 'View, create and remove rules.',
+	],
+],
+
+
+
+
+/resources/scripts/routers/routes.ts
+Please paste this line to /resources/scripts/routers/routes.ts under the import ServerActivityLogContainer from '@/components/server/ServerActivityLogContainer'; line
+
+import FirewallContainer from '@/components/server/firewall/FirewallContainer';
+
+
+Please paste this lines to /resources/scripts/routers/routes.ts to the bottom of server array (help01.png)
+
+{
+	path: '/firewall',
+	permission: 'firewall.*',
+	name: 'Firewall',
+	component: FirewallContainer,
+},
+
+
+
+
+After all code inserted to code and app and resources and database and vendor folder pasted. Please run this commands (node is required, min version: v10.x [node -v]):
+- npm i -g yarn
+- cd /var/www/pterodactyl
+- yarn install
+- yarn run build:production
+- php artisan optimize
+- php artisan migrate
